@@ -1,11 +1,15 @@
 package expert
 
+import "sync"
+
 type Profile struct {
 	ID           string   `json:"id"`
 	Description  string   `json:"description"`
 	SystemPrompt string   `json:"-"`
 	RouteTerms   []string `json:"-"`
 }
+
+var mu sync.RWMutex
 
 var order = []string{"general", "irc", "amiga", "linux", "networking", "security", "c64", "atari"}
 
@@ -51,10 +55,22 @@ var profiles = map[string]Profile{
 	},
 }
 
-func Get(id string) (Profile, bool) { p, ok := profiles[id]; return p, ok }
+func Get(id string) (Profile, bool) {
+	mu.RLock(); defer mu.RUnlock()
+	p, ok := profiles[id]
+	return p, ok
+}
 
 func List() []Profile {
+	mu.RLock(); defer mu.RUnlock()
 	out := make([]Profile, 0, len(order))
 	for _, id := range order { out = append(out, profiles[id]) }
 	return out
+}
+
+func snapshot() (map[string]Profile, []string) {
+	mu.RLock(); defer mu.RUnlock()
+	p := make(map[string]Profile, len(profiles))
+	for id, profile := range profiles { p[id] = profile }
+	return p, append([]string(nil), order...)
 }
