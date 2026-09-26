@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/Ploos-AS/BotAI/internal/api"
 	"github.com/Ploos-AS/BotAI/internal/expert"
@@ -55,6 +58,31 @@ func main() {
 	if err != nil { log.Fatal(err) }
 
 	s := api.New(p)
-	log.Printf("BotAI M0.7 listening on %s provider=%s", addr, p.Name())
-	if err := http.ListenAndServe(addr, s.Handler()); err != nil { log.Fatal(err) }
+	httpServer := &http.Server{
+		Addr: addr,
+		Handler: s.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 15 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout: 90 * time.Second,
+		MaxHeaderBytes: 16 << 10,
+	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-stop
+		log.Printf("shutdown requested")
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Printf("graceful shutdown failed: %v", err)
+		}
+	}()
+
+	log.Printf("BotAI M0.9 listening on %s provider=%s", addr, p.Name())
+	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal(err)
+	}
+	log.Printf("BotAI stopped")
 }
