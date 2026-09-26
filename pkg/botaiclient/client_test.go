@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -37,4 +38,34 @@ func TestCompatibilityRejectsDifferentVersion(t *testing.T) {
 	defer s.Close()
 	c,_:=New(s.URL)
 	if err:=c.Compatible(context.Background());err==nil{t.Fatal("expected compatibility error")}
+}
+
+func TestUnavailableReturnsError(t *testing.T) {
+	c,_:=New("http://127.0.0.1:1")
+	if _,err:=c.Chat(context.Background(),ChatRequest{Message:"hi"});err==nil{t.Fatal("expected unavailable error")}
+}
+
+func TestHTTPErrorDoesNotExposeBody(t *testing.T) {
+	const secret="provider-secret-body"
+	s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
+		http.Error(w,secret,http.StatusBadGateway)
+	}))
+	defer s.Close()
+	c,_:=New(s.URL)
+	_,err:=c.Chat(context.Background(),ChatRequest{Message:"hi"})
+	if err==nil{t.Fatal("expected HTTP error")}
+	if strings.Contains(err.Error(),secret){t.Fatalf("upstream body leaked: %v",err)}
+	if !strings.Contains(err.Error(),"502"){t.Fatalf("status missing: %v",err)}
+}
+
+func TestOversizedResponseFails(t *testing.T) {
+	s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
+		w.Header().Set("Content-Type","application/json")
+		w.Write([]byte(`{"expert":"irc","text":"`))
+		w.Write([]byte(strings.Repeat("x",(1<<20)+1024)))
+		w.Write([]byte(`","provider":"test"}`))
+	}))
+	defer s.Close()
+	c,_:=New(s.URL)
+	if _,err:=c.Chat(context.Background(),ChatRequest{Message:"hi"});err==nil{t.Fatal("expected bounded decode error")}
 }
