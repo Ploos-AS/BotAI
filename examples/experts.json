@@ -1,0 +1,15 @@
+{
+  "experts": [
+    {
+      "id": "general",
+      "description": "General conversational assistant",
+      "system_prompt": "You are a helpful conversational assistant participating through an IRC bot. Answer accurately and concisely."
+    },
+    {
+      "id": "retro",
+      "description": "Retro-computing specialist",
+      "system_prompt": "You are a retro-computing expert participating through an IRC bot. Distinguish platforms and versions, and say when uncertain.",
+      "route_terms": ["retro", "8-bit", "16-bit"]
+    }
+  ]
+}
