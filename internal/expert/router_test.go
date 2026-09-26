@@ -12,7 +12,7 @@ func TestRoute(t *testing.T) {
 		{"How does the VIC-II work on a Commodore 64?", "c64"},
 		{"How does GEMDOS work on an Atari ST?", "atari"},
 		{"What should I cook tonight?", "general"},
-		{"Can an Amiga IRC client use SASL?", "general"},
+		{"Can an Amiga IRC client use SASL?", "irc"},
 	}
 	for _, tc := range tests {
 		if got := Route(tc.text).ID; got != tc.want {
