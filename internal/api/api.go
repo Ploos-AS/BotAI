@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -12,7 +13,10 @@ import (
 const maxHistory = 20
 const maxMessageBytes = 4096
 
-type Server struct{ provider provider.Provider }
+type Server struct{
+	provider provider.Provider
+	metrics metrics
+}
 
 func New(p provider.Provider) *Server { return &Server{provider: p} }
 
@@ -21,8 +25,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /v1/experts", s.experts)
 	mux.HandleFunc("GET /v1/status", s.status)
+	mux.HandleFunc("GET /metrics", s.metricsHandler)
 	mux.HandleFunc("POST /v1/chat", s.chat)
-	return mux
+	return s.observe(mux)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -45,6 +50,19 @@ func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
 		"provider": s.provider.Name(),
 		"experts": len(expert.List()),
 	})
+}
+
+func (s *Server) metricsHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+	requests := s.metrics.requests.Load()
+	chats := s.metrics.chatRequests.Load()
+	errors := s.metrics.chatErrors.Load()
+	latency := s.metrics.chatLatencyNS.Load()
+	fmt.Fprintf(w, "# TYPE botai_http_requests_total counter\nbotai_http_requests_total %d\n", requests)
+	fmt.Fprintf(w, "# TYPE botai_chat_requests_total counter\nbotai_chat_requests_total %d\n", chats)
+	fmt.Fprintf(w, "# TYPE botai_chat_errors_total counter\nbotai_chat_errors_total %d\n", errors)
+	fmt.Fprintf(w, "# TYPE botai_chat_duration_seconds_sum counter\nbotai_chat_duration_seconds_sum %.6f\n", float64(latency)/1e9)
+	fmt.Fprintf(w, "# TYPE botai_chat_duration_seconds_count counter\nbotai_chat_duration_seconds_count %d\n", chats)
 }
 
 func validText(s string) bool {
