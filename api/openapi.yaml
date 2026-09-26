@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: BotAI API
+  version: 1.0.0
+  description: Stable v1 HTTP contract for the optional Ploos BotAI service.
+paths:
+  /healthz:
+    get:
+      summary: Process liveness
+      responses:
+        '200': {description: Process is alive}
+  /readyz:
+    get:
+      summary: Service readiness
+      responses:
+        '200': {description: Service is ready}
+        '503': {description: Service is not ready}
+  /v1/status:
+    get:
+      summary: Read-only service status
+      responses:
+        '200': {description: Service status}
+  /v1/experts:
+    get:
+      summary: List public expert profiles
+      responses:
+        '200':
+          description: Expert profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Expert'
+  /v1/chat:
+    post:
+      summary: Generate one AI reply
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Generated reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400': {description: Invalid request or expert}
+        '502': {description: Provider unavailable}
+  /metrics:
+    get:
+      summary: Prometheus-compatible aggregate metrics
+      responses:
+        '200': {description: Metrics in Prometheus text format}
+components:
+  schemas:
+    Expert:
+      type: object
+      required: [id, description]
+      properties:
+        id: {type: string}
+        description: {type: string}
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+          maxLength: 4096
+    ChatRequest:
+      type: object
+      required: [message]
+      additionalProperties: false
+      properties:
+        expert:
+          type: string
+          description: Expert ID or auto. Omitted selects general.
+        history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Message'
+        message:
+          type: string
+          maxLength: 4096
+    ChatResponse:
+      type: object
+      required: [expert, text, provider]
+      properties:
+        expert: {type: string}
+        text: {type: string}
+        provider: {type: string}
