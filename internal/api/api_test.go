@@ -104,3 +104,32 @@ func TestExplicitExpertOverridesRouting(t *testing.T) {
 	if w.Code != http.StatusOK { t.Fatalf("status=%d", w.Code) }
 	if p.got.Expert != "amiga" { t.Fatalf("expert=%q", p.got.Expert) }
 }
+
+
+func TestRequestID(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	r.Header.Set("X-Request-ID", "test-request-123")
+	w := httptest.NewRecorder()
+	New(provider.NewEcho()).Handler().ServeHTTP(w, r)
+	if got := w.Header().Get("X-Request-ID"); got != "test-request-123" { t.Fatalf("request id=%q", got) }
+}
+
+func TestMetricsContainNoChatContent(t *testing.T) {
+	s := New(provider.NewEcho())
+	h := s.Handler()
+	secret := "PRIVATE_IRC_MESSAGE_42"
+	r := httptest.NewRequest(http.MethodPost, "/v1/chat", strings.NewReader(`{"expert":"general","message":"`+secret+`"}`))
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("chat status=%d", w.Code) }
+
+	mr := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	mw := httptest.NewRecorder()
+	h.ServeHTTP(mw, mr)
+	if mw.Code != http.StatusOK { t.Fatalf("metrics status=%d", mw.Code) }
+	body := mw.Body.String()
+	if strings.Contains(body, secret) { t.Fatal("metrics leaked chat content") }
+	for _, name := range []string{"botai_http_requests_total","botai_chat_requests_total","botai_chat_duration_seconds_sum"} {
+		if !strings.Contains(body, name) { t.Fatalf("missing metric %s", name) }
+	}
+}
