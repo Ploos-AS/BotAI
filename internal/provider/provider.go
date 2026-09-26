@@ -3,8 +3,9 @@ package provider
 import "context"
 
 type Request struct {
-	Expert  string
-	Message string
+	Expert       string
+	SystemPrompt string
+	Message      string
 }
 
 type Response struct {
