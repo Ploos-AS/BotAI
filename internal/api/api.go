@@ -49,7 +49,8 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	in.Expert = strings.TrimSpace(in.Expert)
 	in.Message = strings.TrimSpace(in.Message)
 	if in.Expert == "" { in.Expert = "general" }
-	if _, ok := expert.Get(in.Expert); !ok {
+	profile, ok := expert.Get(in.Expert)
+	if !ok {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unknown expert"})
 		return
 	}
@@ -57,10 +58,12 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "message is required"})
 		return
 	}
-	out, err := s.provider.Chat(r.Context(), provider.Request{Expert: in.Expert, Message: in.Message})
+	out, err := s.provider.Chat(r.Context(), provider.Request{
+		Expert: profile.ID, SystemPrompt: profile.SystemPrompt, Message: in.Message,
+	})
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "provider unavailable"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"expert": in.Expert, "text": out.Text, "provider": s.provider.Name()})
+	writeJSON(w, http.StatusOK, map[string]string{"expert": profile.ID, "text": out.Text, "provider": s.provider.Name()})
 }
