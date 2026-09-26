@@ -152,3 +152,29 @@ func TestHealthAndReadinessAreSeparate(t *testing.T) {
 		if w.Code != http.StatusOK { t.Fatalf("%s status=%d", path, w.Code) }
 	}
 }
+
+
+func TestAPIVersion(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/v1/version", nil)
+	w := httptest.NewRecorder()
+	New(provider.NewEcho()).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d", w.Code) }
+	if !strings.Contains(w.Body.String(), `"api_version":"1.0.0"`) { t.Fatalf("body=%s", w.Body.String()) }
+}
+
+func TestStatusIncludesAPIVersion(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/v1/status", nil)
+	w := httptest.NewRecorder()
+	New(provider.NewEcho()).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d", w.Code) }
+	if !strings.Contains(w.Body.String(), `"api_version":"1.0.0"`) { t.Fatalf("body=%s", w.Body.String()) }
+}
+
+func TestOmittedExpertRemainsGeneral(t *testing.T) {
+	p := &captureProvider{}
+	r := httptest.NewRequest(http.MethodPost, "/v1/chat", strings.NewReader(`{"message":"hello"}`))
+	w := httptest.NewRecorder()
+	New(p).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d body=%s", w.Code, w.Body.String()) }
+	if p.got.Expert != "general" { t.Fatalf("expert=%q", p.got.Expert) }
+}
