@@ -20,6 +20,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /v1/experts", s.experts)
+	mux.HandleFunc("GET /v1/status", s.status)
 	mux.HandleFunc("POST /v1/chat", s.chat)
 	return mux
 }
@@ -36,6 +37,14 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) experts(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, expert.List())
+}
+
+func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "ok",
+		"provider": s.provider.Name(),
+		"experts": len(expert.List()),
+	})
 }
 
 func validText(s string) bool {
