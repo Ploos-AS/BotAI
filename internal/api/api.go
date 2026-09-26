@@ -23,6 +23,7 @@ func New(p provider.Provider) *Server { return &Server{provider: p} }
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	mux.HandleFunc("GET /readyz", s.ready)
 	mux.HandleFunc("GET /v1/experts", s.experts)
 	mux.HandleFunc("GET /v1/status", s.status)
 	mux.HandleFunc("GET /metrics", s.metricsHandler)
@@ -38,6 +39,14 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "provider": s.provider.Name()})
+}
+
+func (s *Server) ready(w http.ResponseWriter, _ *http.Request) {
+	if s.provider == nil || len(expert.List()) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status":"not ready"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status":"ready","provider":s.provider.Name(),"experts":len(expert.List())})
 }
 
 func (s *Server) experts(w http.ResponseWriter, _ *http.Request) {
