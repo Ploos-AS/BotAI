@@ -36,7 +36,7 @@ func (p *OpenAICompatible) Chat(ctx context.Context, r Request) (Response, error
 	body := map[string]any{
 		"model": p.model,
 		"messages": []map[string]string{
-			{"role": "system", "content": "You are the " + r.Expert + " expert for an IRC bot. Be concise, accurate, and IRC-friendly."},
+			{"role": "system", "content": r.SystemPrompt},
 			{"role": "user", "content": r.Message},
 		},
 	}
