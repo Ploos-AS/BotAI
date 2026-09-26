@@ -7,8 +7,8 @@ import (
 )
 
 func TestLoadFile(t *testing.T) {
-	oldProfiles, oldOrder := profiles, order
-	defer func(){ profiles, order = oldProfiles, oldOrder }()
+	oldProfiles, oldOrder := snapshot()
+	defer func(){ mu.Lock(); profiles, order = oldProfiles, oldOrder; mu.Unlock() }()
 
 	path := filepath.Join(t.TempDir(), "experts.json")
 	data := `{"experts":[
@@ -32,4 +32,19 @@ func TestLoadFileRejectsDuplicate(t *testing.T) {
 	data := `{"experts":[{"id":"general","description":"a","system_prompt":"a"},{"id":"GENERAL","description":"b","system_prompt":"b"}]}`
 	if err := os.WriteFile(path, []byte(data), 0600); err != nil { t.Fatal(err) }
 	if err := LoadFile(path); err == nil { t.Fatal("expected duplicate error") }
+}
+
+
+func TestFailedReloadKeepsCurrentRegistry(t *testing.T) {
+	oldProfiles, oldOrder := snapshot()
+	defer func(){ mu.Lock(); profiles, order = oldProfiles, oldOrder; mu.Unlock() }()
+
+	dir := t.TempDir()
+	good := filepath.Join(dir, "good.json")
+	bad := filepath.Join(dir, "bad.json")
+	if err := os.WriteFile(good, []byte(`{"experts":[{"id":"general","description":"General","system_prompt":"General"},{"id":"retro","description":"Retro","system_prompt":"Retro","route_terms":["retro"]}]}`), 0600); err != nil { t.Fatal(err) }
+	if err := LoadFile(good); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(bad, []byte(`{"experts":[{"id":"broken","description":"","system_prompt":""}]}`), 0600); err != nil { t.Fatal(err) }
+	if err := LoadFile(bad); err == nil { t.Fatal("expected reload error") }
+	if got := Route("retro").ID; got != "retro" { t.Fatalf("registry changed after failed reload: %q", got) }
 }
