@@ -2,6 +2,39 @@
 
 BotAI is the optional shared AI service for Ploos IRC bots.
 
+## Status
+
+**M0 — service skeleton implemented; CI qualification pending.**
+
+M0 provides a small Go service with a provider abstraction, initial expert registry
+(`general`, `irc`, `amiga`), bounded JSON API, deterministic test provider,
+unit tests, GitHub Actions CI and an Alpine OCI image.
+
+## Run
+
+```sh
+go run ./cmd/botai
+```
+
+BotAI listens on `127.0.0.1:8090` by default. Override with `BOTAI_LISTEN`.
+
+Endpoints:
+
+- `GET /healthz`
+- `GET /v1/experts`
+- `POST /v1/chat`
+
+Example:
+
+```sh
+curl -s http://127.0.0.1:8090/v1/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"expert":"irc","message":"What is IRC 433?"}'
+```
+
+The M0 echo provider is deliberately deterministic and has no network dependency.
+Real local/cloud LLM providers belong to subsequent milestones.
+
 ## Standalone-first rule
 
 BotAI is an optional enhancement, never part of the IRC bot core. LuCa, Engo, AmBot, and other participating bots MUST remain fully functional IRC bots without BotAI, BotWeb, PBMP, or any other external Ploos service.
@@ -21,3 +54,5 @@ IRC bot core (standalone)
 ```
 
 This keeps AI and web management independently optional and prevents hidden service dependencies.
+
+See `docs/M0.md` and `docs/ARCHITECTURE.md`.
