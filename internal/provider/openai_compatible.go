@@ -33,13 +33,14 @@ func NewOpenAICompatible(baseURL, apiKey, model string) (*OpenAICompatible, erro
 func (p *OpenAICompatible) Name() string { return "openai-compatible" }
 
 func (p *OpenAICompatible) Chat(ctx context.Context, r Request) (Response, error) {
-	body := map[string]any{
-		"model": p.model,
-		"messages": []map[string]string{
-			{"role": "system", "content": r.SystemPrompt},
-			{"role": "user", "content": r.Message},
-		},
+	messages := make([]map[string]string, 0, len(r.History)+2)
+	messages = append(messages, map[string]string{"role":"system", "content":r.SystemPrompt})
+	for _, m := range r.History {
+		messages = append(messages, map[string]string{"role":m.Role, "content":m.Content})
 	}
+	messages = append(messages, map[string]string{"role":"user", "content":r.Message})
+
+	body := map[string]any{"model": p.model, "messages": messages}
 	raw, err := json.Marshal(body)
 	if err != nil { return Response{}, err }
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/chat/completions", bytes.NewReader(raw))
