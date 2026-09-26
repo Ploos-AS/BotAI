@@ -45,7 +45,9 @@ func LoadFile(path string) error {
 	}
 	if _, ok := next["general"]; !ok { return errors.New("expert config must define general") }
 
+	mu.Lock()
 	profiles = next
 	order = nextOrder
+	mu.Unlock()
 	return nil
 }
