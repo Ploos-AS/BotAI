@@ -4,7 +4,7 @@ BotAI is the optional shared AI service for Ploos IRC bots.
 
 ## Status
 
-**M0.4 — deterministic expert routing implemented; CI qualification pending.**
+**M0.5 — data-driven expert registry implemented; CI qualification pending.**
 
 M0 provides a small Go service with a provider abstraction, initial expert registry
 (`general`, `irc`, `amiga`), bounded JSON API, deterministic test provider,
@@ -65,4 +65,4 @@ IRC bot core (standalone)
 
 This keeps AI and web management independently optional and prevents hidden service dependencies.
 
-See `docs/M0.md` through `docs/M0.4.md` and `docs/ARCHITECTURE.md`.
+See `docs/M0.md` through `docs/M0.5.md` and `docs/ARCHITECTURE.md`.
