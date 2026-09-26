@@ -2,9 +2,15 @@ package provider
 
 import "context"
 
+type Message struct {
+	Role    string
+	Content string
+}
+
 type Request struct {
 	Expert       string
 	SystemPrompt string
+	History      []Message
 	Message      string
 }
 
