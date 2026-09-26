@@ -133,3 +133,22 @@ func TestMetricsContainNoChatContent(t *testing.T) {
 		if !strings.Contains(body, name) { t.Fatalf("missing metric %s", name) }
 	}
 }
+
+
+func TestReadiness(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	w := httptest.NewRecorder()
+	New(provider.NewEcho()).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d body=%s", w.Code, w.Body.String()) }
+	if !strings.Contains(w.Body.String(), `"status":"ready"`) { t.Fatalf("body=%s", w.Body.String()) }
+}
+
+func TestHealthAndReadinessAreSeparate(t *testing.T) {
+	s := New(provider.NewEcho()).Handler()
+	for _, path := range []string{"/healthz", "/readyz"} {
+		r := httptest.NewRequest(http.MethodGet, path, nil)
+		w := httptest.NewRecorder()
+		s.ServeHTTP(w, r)
+		if w.Code != http.StatusOK { t.Fatalf("%s status=%d", path, w.Code) }
+	}
+}
