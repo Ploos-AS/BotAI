@@ -12,6 +12,7 @@ import (
 
 const maxHistory = 20
 const maxMessageBytes = 4096
+const APIVersion = "1.0.0"
 
 type Server struct{
 	provider provider.Provider
@@ -26,6 +27,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /readyz", s.ready)
 	mux.HandleFunc("GET /v1/experts", s.experts)
 	mux.HandleFunc("GET /v1/status", s.status)
+	mux.HandleFunc("GET /v1/version", s.version)
 	mux.HandleFunc("GET /metrics", s.metricsHandler)
 	mux.HandleFunc("POST /v1/chat", s.chat)
 	return s.observe(mux)
@@ -53,11 +55,16 @@ func (s *Server) experts(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, expert.List())
 }
 
+func (s *Server) version(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"api_version": APIVersion})
+}
+
 func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status": "ok",
 		"provider": s.provider.Name(),
 		"experts": len(expert.List()),
+		"api_version": APIVersion,
 	})
 }
 
