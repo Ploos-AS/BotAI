@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/Ploos-AS/BotAI/internal/api"
 	"github.com/Ploos-AS/BotAI/internal/expert"
@@ -31,15 +33,28 @@ func main() {
 	addr := os.Getenv("BOTAI_LISTEN")
 	if addr == "" { addr = "127.0.0.1:8090" }
 
-	if path := strings.TrimSpace(os.Getenv("BOTAI_EXPERTS_FILE")); path != "" {
-		if err := expert.LoadFile(path); err != nil { log.Fatal(err) }
-		log.Printf("loaded expert configuration from %s", path)
+	expertPath := strings.TrimSpace(os.Getenv("BOTAI_EXPERTS_FILE"))
+	if expertPath != "" {
+		if err := expert.LoadFile(expertPath); err != nil { log.Fatal(err) }
+		log.Printf("loaded expert configuration from %s", expertPath)
+
+		hup := make(chan os.Signal, 1)
+		signal.Notify(hup, syscall.SIGHUP)
+		go func() {
+			for range hup {
+				if err := expert.LoadFile(expertPath); err != nil {
+					log.Printf("expert configuration reload failed; keeping current registry: %v", err)
+					continue
+				}
+				log.Printf("reloaded expert configuration from %s", expertPath)
+			}
+		}()
 	}
 
 	p, err := configuredProvider()
 	if err != nil { log.Fatal(err) }
 
 	s := api.New(p)
-	log.Printf("BotAI M0.6 listening on %s provider=%s", addr, p.Name())
+	log.Printf("BotAI M0.7 listening on %s provider=%s", addr, p.Name())
 	if err := http.ListenAndServe(addr, s.Handler()); err != nil { log.Fatal(err) }
 }
