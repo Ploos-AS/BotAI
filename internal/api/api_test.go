@@ -84,3 +84,23 @@ func TestConversationHistoryRejectsSystemRole(t *testing.T) {
 	New(provider.NewEcho()).Handler().ServeHTTP(w, r)
 	if w.Code != http.StatusBadRequest { t.Fatalf("status=%d", w.Code) }
 }
+
+
+func TestAutoExpertRouting(t *testing.T) {
+	p := &captureProvider{}
+	r := httptest.NewRequest(http.MethodPost, "/v1/chat", strings.NewReader(`{"expert":"auto","message":"Why does IRC numeric 433 happen?"}`))
+	w := httptest.NewRecorder()
+	New(p).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d body=%s", w.Code, w.Body.String()) }
+	if p.got.Expert != "irc" { t.Fatalf("expert=%q", p.got.Expert) }
+	if !strings.Contains(w.Body.String(), `"expert":"irc"`) { t.Fatalf("body=%s", w.Body.String()) }
+}
+
+func TestExplicitExpertOverridesRouting(t *testing.T) {
+	p := &captureProvider{}
+	r := httptest.NewRequest(http.MethodPost, "/v1/chat", strings.NewReader(`{"expert":"amiga","message":"Explain IRC SASL"}`))
+	w := httptest.NewRecorder()
+	New(p).Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK { t.Fatalf("status=%d", w.Code) }
+	if p.got.Expert != "amiga" { t.Fatalf("expert=%q", p.got.Expert) }
+}
