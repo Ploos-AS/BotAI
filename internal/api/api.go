@@ -60,14 +60,20 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	in.Expert = strings.TrimSpace(in.Expert)
 	in.Message = strings.TrimSpace(in.Message)
 	if in.Expert == "" { in.Expert = "general" }
-	profile, ok := expert.Get(in.Expert)
-	if !ok {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unknown expert"})
-		return
-	}
 	if !validText(in.Message) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "message is required and must be at most 4096 bytes"})
 		return
+	}
+	var profile expert.Profile
+	var ok bool
+	if in.Expert == "auto" {
+		profile = expert.Route(in.Message)
+	} else {
+		profile, ok = expert.Get(in.Expert)
+		if !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unknown expert"})
+			return
+		}
 	}
 	if len(in.History) > maxHistory {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "history exceeds 20 messages"})
