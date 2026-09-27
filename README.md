@@ -4,7 +4,7 @@ BotAI is the optional shared AI service for Ploos IRC bots.
 
 ## Status
 
-**M1.2 — PASS. BotAI v1 integration qualified across Go (Engo) and native C (LuCa).**
+**M1.3 — PASS. BotAI v1 integration qualified across Go (Engo), native C (LuCa), and classic-Amiga native C (AmBot).**
 
 M0 provides a small Go service with a provider abstraction, initial expert registry
 (`general`, `irc`, `amiga`), bounded JSON API, deterministic test provider,
@@ -14,7 +14,7 @@ M1.0 adds the BotAI v1 Go reference client. M1.1 adds explicit negative-path
 qualification and the integration contract that participating bots must satisfy.
 Engo is the first qualified real-bot integration. M1.2 qualifies LuCa's optional
 native-C adapter on both Ubuntu CI and the Alpine OCI Release build, demonstrating
-that the BotAI v1 contract is independent of the Go reference implementation.
+that the BotAI v1 contract is independent of the Go reference implementation. M1.3 extends qualification to AmBot's native-C Motorola 68000/classic-Amiga target, including its single-network and M7 multinet/AmBNC command paths.
 
 ## Run
 
@@ -75,4 +75,4 @@ IRC bot core (standalone)
 
 This keeps AI and web management independently optional and prevents hidden service dependencies.
 
-See `docs/M0.md` through `docs/M0.10.md`, `docs/M1.0.md`, `docs/M1.1.md`, `docs/M1.2.md`, and `docs/ARCHITECTURE.md`.
+See `docs/M0.md` through `docs/M0.10.md`, `docs/M1.0.md`, `docs/M1.1.md`, `docs/M1.2.md`, `docs/M1.3.md`, and `docs/ARCHITECTURE.md`.
